@@ -665,7 +665,7 @@
         <span id="alert-count" style="font-family: 'Space Mono', monospace; font-size: 10px; color: var(--red)"></span>
       </div>
       <div class="alerts-list" id="alerts-list">
-        <div class="no-alerts">No actief alerts</div>
+        <div class="no-alerts">Geen actieve meldingen</div>
       </div>
     </div>
 
@@ -800,7 +800,7 @@
     const countEl = document.getElementById('alert-count');
 
     if (!data || data.length === 0) {
-      list.innerHTML = '<div class="no-alerts">✓ No actief alerts</div>';
+      list.innerHTML = '<div class="no-alerts">✓ Geen actieve meldingen</div>';
       countEl.textContent = '';
       document.getElementById('m-alerts').textContent = '0';
       return data;
