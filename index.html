@@ -774,7 +774,8 @@
       return data;
     }
     row.innerHTML = data.map(s => {
-      const pct = Math.min((s.actief_tasks / 10) * 100, 100);
+      const tasks = s.active_tasks || 0;
+      const pct = Math.min((tasks / 10) * 100, 100);
       const cls = pct < 40 ? 'load-low' : pct < 70 ? 'load-med' : 'load-high';
       return `
         <div class="staff-card">
@@ -783,12 +784,12 @@
           <div class="staff-load-bar">
             <div class="staff-load-fill ${cls}" style="width: ${pct}%"></div>
           </div>
-          <div class="staff-tasks">${s.actief_tasks} tasks</div>
+          <div class="staff-tasks">${s.active_tasks || 0} taken</div>
         </div>
       `;
     }).join('');
 
-    const total = data.reduce((a, s) => a + s.actief_tasks, 0);
+    const total = data.reduce((a, s) => a + s.active_tasks, 0);
     document.getElementById('m-staff').textContent = total;
     return data;
   }
@@ -1015,11 +1016,11 @@
   }
 
   async function updateStaffLoad() {
-    const actiefOrders = await supabase('orders', 'status=in.(pending,cooking)');
+    const activeOrders = await supabase('orders', 'status=in.(pending,cooking)');
     const staff = await supabase('staff', 'order=id.asc');
-    if (!staff || !actiefOrders) return;
+    if (!staff || !activeOrders) return;
 
-    const totalActive = actiefOrders.length;
+    const totalActive = activeOrders.length;
     const staffCount = staff.length;
 
     // Distribute load across staff with some randomness
@@ -1027,7 +1028,7 @@
       const base = Math.floor(totalActive / staffCount);
       const variance = Math.floor(Math.random() * 3);
       const tasks = Math.max(0, base + variance);
-      await supabasePatch('staff', staff[i].id, { actief_tasks: tasks });
+      await supabasePatch('staff', staff[i].id, { active_tasks: tasks });
     }
   }
 
