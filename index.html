@@ -789,7 +789,7 @@
       `;
     }).join('');
 
-    const total = data.reduce((a, s) => a + s.active_tasks, 0);
+    const total = data.reduce((a, s) => a + (s.active_tasks || 0), 0);
     document.getElementById('m-staff').textContent = total;
     return data;
   }
