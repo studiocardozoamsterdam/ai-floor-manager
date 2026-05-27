@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Floor Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface2: #1a1a1a;
+      --border: #222222;
+      --text: #f0ede8;
+      --muted: #666;
+      --accent: #e8ff47;
+      --accent2: #ff6b35;
+      --red: #ff3b3b;
+      --orange: #ff8c42;
+      --green: #4ade80;
+      --blue: #60a5fa;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* HEADER */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .logo-text {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .logo-sub {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--green);
+      letter-spacing: 0.05em;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .time-display {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* MAIN LAYOUT */
+    main {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      grid-template-rows: auto 1fr;
+      gap: 0;
+      height: calc(100vh - 73px);
+    }
+
+    /* METRICS ROW */
+    .metrics-row {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .metric-card {
+      padding: 24px 28px;
+      border-right: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card:last-child { border-right: none; }
+
+    .metric-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .metric-value {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .metric-value.accent { color: var(--accent); }
+    .metric-value.red { color: var(--red); }
+    .metric-value.orange { color: var(--orange); }
+    .metric-value.green { color: var(--green); }
+    .metric-value.blue { color: var(--blue); }
+
+    .metric-sub {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* LEFT PANEL — Tables + Orders */
+    .left-panel {
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 20px 28px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .panel-body {
+      padding: 20px 28px;
+      flex: 1;
+    }
+
+    /* TABLE GRID */
+    .tables-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .table-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 14px;
+      position: relative;
+      transition: border-color 0.3s;
+      cursor: default;
+    }
+
+    .table-card.seated { border-color: var(--blue); }
+    .table-card.ordered { border-color: var(--orange); }
+    .table-card.food_waiting { border-color: var(--red); animation: warningPulse 2s infinite; }
+    .table-card.finished { border-color: var(--green); }
+    .table-card.empty { border-color: var(--border); opacity: 0.5; }
+
+    @keyframes warningPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,59,0); }
+      50% { box-shadow: 0 0 0 4px rgba(255,59,59,0.2); }
+    }
+
+    .table-number {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .table-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      position: absolute;
+      top: 14px;
+      right: 14px;
+    }
+
+    .seated .table-status-dot { background: var(--blue); }
+    .ordered .table-status-dot { background: var(--orange); }
+    .food_waiting .table-status-dot { background: var(--red); }
+    .finished .table-status-dot { background: var(--green); }
+    .empty .table-status-dot { background: var(--border); }
+
+    .table-guests {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .table-status-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .seated .table-status-text { color: var(--blue); }
+    .ordered .table-status-text { color: var(--orange); }
+    .food_waiting .table-status-text { color: var(--red); }
+    .finished .table-status-text { color: var(--green); }
+
+    /* ORDERS LIST */
+    .section-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .orders-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .order-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-radius: 6px;
+      border-left: 3px solid var(--border);
+      transition: border-color 0.3s;
+    }
+
+    .order-row.pending { border-left-color: var(--orange); }
+    .order-row.cooking { border-left-color: var(--blue); }
+    .order-row.served { border-left-color: var(--green); }
+
+    .order-table {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      width: 50px;
+      flex-shrink: 0;
+    }
+
+    .order-dish {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .order-time {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .order-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .order-badge.pending { background: rgba(255,140,66,0.15); color: var(--orange); }
+    .order-badge.cooking { background: rgba(96,165,250,0.15); color: var(--blue); }
+    .order-badge.served { background: rgba(74,222,128,0.15); color: var(--green); }
+
+    /* RIGHT PANEL — Alerts + AI */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ALERTS */
+    .alerts-section {
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .alerts-list {
+      padding: 12px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .alert-item {
+      padding: 12px 14px;
+      border-radius: 6px;
+      border-left: 3px solid;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: slideIn 0.4s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .alert-item.critical {
+      background: rgba(255,59,59,0.08);
+      border-left-color: var(--red);
+    }
+
+    .alert-item.warning {
+      background: rgba(255,140,66,0.08);
+      border-left-color: var(--orange);
+    }
+
+    .alert-item.info {
+      background: rgba(96,165,250,0.08);
+      border-left-color: var(--blue);
+    }
+
+    .alert-type {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .critical .alert-type { color: var(--red); }
+    .warning .alert-type { color: var(--orange); }
+    .info .alert-type { color: var(--blue); }
+
+    .alert-message {
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .alert-time {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: var(--muted);
+    }
+
+    .no-alerts {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 16px 20px;
+      text-align: center;
+    }
+
+    /* AI INSIGHT BOX */
+    .ai-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .ai-body {
+      padding: 16px 20px;
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .ai-block {
+      padding: 14px 16px;
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .ai-block-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .ai-block-text {
+      font-size: 12px;
+      line-height: 1.6;
+      color: #ccc;
+    }
+
+    .ai-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .ai-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* STAFF ROW */
+    .staff-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .staff-card {
+      background: var(--surface);
+      border-radius: 6px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+    }
+
+    .staff-name {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .staff-role {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .staff-load-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .staff-load-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    .load-low { background: var(--green); }
+    .load-med { background: var(--orange); }
+    .load-high { background: var(--red); }
+
+    .staff-tasks {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* REFRESH BTN */
+    .refresh-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+    }
+
+    .refresh-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .ai-refresh-btn {
+      margin: 0 20px 16px;
+      background: rgba(232,255,71,0.08);
+      border: 1px solid rgba(232,255,71,0.2);
+      color: var(--accent);
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+      width: calc(100% - 40px);
+    }
+
+    .ai-refresh-btn:hover {
+      background: rgba(232,255,71,0.15);
+    }
+
+    .ai-refresh-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .empty-state {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⬡</div>
+    <div>
+      <div class="logo-text">AI Floor Manager</div>
+      <div class="logo-sub">Real-time Operations Copilot</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-indicator">
+      <div class="live-dot"></div>
+      LIVE
+    </div>
+    <div class="time-display" id="clock">--:--:--</div>
+    <button class="refresh-btn" onclick="loadAll()">↻ REFRESH</button>
+  </div>
+</header>
+
+<main>
+  <!-- METRICS ROW -->
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="metric-label">Active Tables</div>
+      <div class="metric-value accent" id="m-active">--</div>
+      <div class="metric-sub">of <span id="m-total">8</span> total</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Orders In Progress</div>
+      <div class="metric-value orange" id="m-orders">--</div>
+      <div class="metric-sub">pending + cooking</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Avg Wait Time</div>
+      <div class="metric-value red" id="m-wait">--</div>
+      <div class="metric-sub">minutes per order</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Staff Load</div>
+      <div class="metric-value blue" id="m-staff">--</div>
+      <div class="metric-sub">active tasks total</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Active Alerts</div>
+      <div class="metric-value" id="m-alerts" style="color: var(--red)">--</div>
+      <div class="metric-sub">unresolved</div>
+    </div>
+  </div>
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="panel-header">
+      <div class="panel-title">Floor Overview</div>
+    </div>
+    <div class="panel-body">
+
+      <div class="section-title">Tables</div>
+      <div class="tables-grid" id="tables-grid">
+        <div class="empty-state">Loading...</div>
+      </div>
+
+      <div class="section-title">Recent Orders</div>
+      <div class="orders-list" id="orders-list">
+        <div class="empty-state">Loading...</div>
+      </div>
+
+      <div class="section-title" style="margin-top: 24px">Staff</div>
+      <div class="staff-row" id="staff-row">
+        <div class="empty-state">Loading...</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <!-- ALERTS -->
+    <div class="alerts-section">
+      <div class="panel-header">
+        <div class="panel-title">Alerts</div>
+        <span id="alert-count" style="font-family: 'Space Mono', monospace; font-size: 10px; color: var(--red)"></span>
+      </div>
+      <div class="alerts-list" id="alerts-list">
+        <div class="no-alerts">No active alerts</div>
+      </div>
+    </div>
+
+    <!-- AI INSIGHT -->
+    <div class="ai-section">
+      <div class="panel-header">
+        <div class="panel-title">AI Floor Manager</div>
+      </div>
+      <div class="ai-body" id="ai-body">
+        <div class="ai-loading">
+          <div class="ai-spinner"></div>
+          Waiting for analysis...
+        </div>
+      </div>
+      <button class="ai-refresh-btn" id="ai-btn" onclick="runAIAnalysis()">⬡ RUN AI ANALYSIS</button>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://nhlowlerkggqunpljqoh.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_3eVMM5iTWre3F3v-sHrxiQ_56PEJHyF';
+
+  async function supabase(table, params = '') {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      }
+    });
+    return res.json();
+  }
+
+  // Clock
+  function updateClock() {
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('nl-NL');
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // Format time ago
+  function timeAgo(dateStr) {
+    const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
+    if (diff < 1) return 'just now';
+    if (diff === 1) return '1 min ago';
+    return `${diff} min ago`;
+  }
+
+  // Load Tables
+  async function loadTables() {
+    const data = await supabase('tables', 'order=id.asc');
+    const grid = document.getElementById('tables-grid');
+    if (!data || data.length === 0) {
+      grid.innerHTML = '<div class="empty-state">No tables found</div>';
+      return data;
+    }
+    grid.innerHTML = data.map(t => `
+      <div class="table-card ${t.status}">
+        <div class="table-number">T${t.id}</div>
+        <div class="table-status-dot"></div>
+        <div class="table-guests">${t.guests}</div>
+        <div class="table-status-text">${t.status.replace('_', ' ')}</div>
+      </div>
+    `).join('');
+
+    const active = data.filter(t => t.status !== 'empty').length;
+    document.getElementById('m-active').textContent = active;
+    document.getElementById('m-total').textContent = data.length;
+    return data;
+  }
+
+  // Load Orders
+  async function loadOrders() {
+    const data = await supabase('orders', 'order=created_at.desc&limit=8');
+    const list = document.getElementById('orders-list');
+    if (!data || data.length === 0) {
+      list.innerHTML = '<div class="empty-state">No orders yet</div>';
+      document.getElementById('m-orders').textContent = '0';
+      document.getElementById('m-wait').textContent = '0m';
+      return data;
+    }
+    list.innerHTML = data.map(o => `
+      <div class="order-row ${o.status}">
+        <div class="order-table">T${o.table_id}</div>
+        <div class="order-dish">${o.dish}</div>
+        <div class="order-time">${timeAgo(o.created_at)}</div>
+        <div class="order-badge ${o.status}">${o.status}</div>
+      </div>
+    `).join('');
+
+    const active = data.filter(o => o.status === 'pending' || o.status === 'cooking').length;
+    document.getElementById('m-orders').textContent = active;
+
+    const avgWait = Math.round(data.reduce((a, o) => a + (o.estimated_prep_time || 12), 0) / data.length);
+    document.getElementById('m-wait').textContent = avgWait + 'm';
+    return data;
+  }
+
+  // Load Staff
+  async function loadStaff() {
+    const data = await supabase('staff', 'order=id.asc');
+    const row = document.getElementById('staff-row');
+    if (!data || data.length === 0) {
+      row.innerHTML = '<div class="empty-state">No staff data</div>';
+      return data;
+    }
+    row.innerHTML = data.map(s => {
+      const pct = Math.min((s.active_tasks / 10) * 100, 100);
+      const cls = pct < 40 ? 'load-low' : pct < 70 ? 'load-med' : 'load-high';
+      return `
+        <div class="staff-card">
+          <div class="staff-name">${s.name}</div>
+          <div class="staff-role">${s.role}</div>
+          <div class="staff-load-bar">
+            <div class="staff-load-fill ${cls}" style="width: ${pct}%"></div>
+          </div>
+          <div class="staff-tasks">${s.active_tasks} tasks</div>
+        </div>
+      `;
+    }).join('');
+
+    const total = data.reduce((a, s) => a + s.active_tasks, 0);
+    document.getElementById('m-staff').textContent = total;
+    return data;
+  }
+
+  // Load Alerts
+  async function loadAlerts() {
+    const data = await supabase('alerts', 'resolved=eq.false&order=created_at.desc&limit=10');
+    const list = document.getElementById('alerts-list');
+    const countEl = document.getElementById('alert-count');
+
+    if (!data || data.length === 0) {
+      list.innerHTML = '<div class="no-alerts">✓ No active alerts</div>';
+      countEl.textContent = '';
+      document.getElementById('m-alerts').textContent = '0';
+      return data;
+    }
+
+    countEl.textContent = `${data.length} active`;
+    document.getElementById('m-alerts').textContent = data.length;
+
+    list.innerHTML = data.map(a => `
+      <div class="alert-item ${a.severity}">
+        <div class="alert-type">${a.type}</div>
+        <div class="alert-message">${a.message}</div>
+        <div class="alert-time">${timeAgo(a.created_at)}</div>
+      </div>
+    `).join('');
+    return data;
+  }
+
+  // AI Analysis
+  async function runAIAnalysis() {
+    const btn = document.getElementById('ai-btn');
+    const body = document.getElementById('ai-body');
+    btn.disabled = true;
+    btn.textContent = '⬡ ANALYZING...';
+
+    body.innerHTML = `<div class="ai-loading"><div class="ai-spinner"></div>Gathering live data...</div>`;
+
+    try {
+      const [tables, orders, staff, alerts] = await Promise.all([
+        supabase('tables', 'order=id.asc'),
+        supabase('orders', 'order=created_at.desc&limit=20'),
+        supabase('staff', 'order=id.asc'),
+        supabase('alerts', 'resolved=eq.false&order=created_at.desc')
+      ]);
+
+      const snapshot = {
+        tables: tables || [],
+        orders: orders || [],
+        staff: staff || [],
+        alerts: alerts || []
+      };
+
+      body.innerHTML = `<div class="ai-loading"><div class="ai-spinner"></div>AI is analyzing...</div>`;
+
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-analysis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify(snapshot)
+      });
+
+      const result = await response.json();
+
+      // Debug: log full response to console
+      console.log('Edge function response:', JSON.stringify(result, null, 2));
+
+      // Handle possible error from edge function
+      if (result.error) {
+        body.innerHTML = `<div class="ai-block">
+          <div class="ai-block-label" style="color: var(--red)">ERROR</div>
+          <div class="ai-block-text">${result.error?.message || JSON.stringify(result.error)}</div>
+        </div>`;
+        btn.disabled = false;
+        btn.textContent = '⬡ RUN AI ANALYSIS';
+        return;
+      }
+
+      const text = result.content?.[0]?.text || '';
+
+      if (!text) {
+        body.innerHTML = `<div class="ai-block">
+          <div class="ai-block-label" style="color: var(--red)">DEBUG</div>
+          <div class="ai-block-text">Raw response: ${JSON.stringify(result).substring(0, 300)}</div>
+        </div>`;
+        btn.disabled = false;
+        btn.textContent = '⬡ RUN AI ANALYSIS';
+        return;
+      }
+
+      const labels = ['SITUATION NOW', 'RISK DETECTION', 'RECOMMENDED ACTION'];
+      const parts = text.split(/SITUATION NOW|RISK DETECTION|RECOMMENDED ACTION/).filter(s => s.trim());
+
+      if (parts.length >= 3) {
+        body.innerHTML = labels.map((label, i) => `
+          <div class="ai-block">
+            <div class="ai-block-label">${label}</div>
+            <div class="ai-block-text">${parts[i]?.trim() || ''}</div>
+          </div>
+        `).join('');
+      } else {
+        body.innerHTML = `<div class="ai-block">
+          <div class="ai-block-label">ANALYSIS</div>
+          <div class="ai-block-text">${text}</div>
+        </div>`;
+      }
+
+    } catch (err) {
+      body.innerHTML = `<div class="ai-block">
+        <div class="ai-block-label" style="color: var(--red)">ERROR</div>
+        <div class="ai-block-text">Could not connect to AI. Check console for details.</div>
+      </div>`;
+      console.error(err);
+    }
+
+    btn.disabled = false;
+    btn.textContent = '⬡ RUN AI ANALYSIS';
+  }
+
+  async function loadAll() {
+    await Promise.all([loadTables(), loadOrders(), loadStaff(), loadAlerts()]);
+  }
+
+  // Init
+  loadAll();
+  setInterval(loadAll, 30000); // auto-refresh every 30s
+</script>
+</body>
+</html>
