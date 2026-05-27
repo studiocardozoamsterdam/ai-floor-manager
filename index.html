@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Floor Manager</title>
+  <title>AI Vloermanager</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <style>
     :root {
@@ -586,8 +586,8 @@
   <div class="logo">
     <div class="logo-icon">⬡</div>
     <div>
-      <div class="logo-text">AI Floor Manager</div>
-      <div class="logo-sub">Real-time Operations Copilot</div>
+      <div class="logo-text">AI Vloermanager</div>
+      <div class="logo-sub">Realtime Operationeel Overzicht</div>
     </div>
   </div>
   <div class="header-right">
@@ -596,7 +596,7 @@
       LIVE
     </div>
     <div class="time-display" id="clock">--:--:--</div>
-    <button class="refresh-btn" onclick="loadAll()">↻ REFRESH</button>
+    <button class="refresh-btn" onclick="loadAll()">↻ VERNIEUWEN</button>
   </div>
 </header>
 
@@ -604,52 +604,52 @@
   <!-- METRICS ROW -->
   <div class="metrics-row">
     <div class="metric-card">
-      <div class="metric-label">Active Tables</div>
-      <div class="metric-value accent" id="m-active">--</div>
-      <div class="metric-sub">of <span id="m-total">8</span> total</div>
+      <div class="metric-label">Actieve Tafels</div>
+      <div class="metric-value accent" id="m-actief">--</div>
+      <div class="metric-sub">van <span id="m-total">8</span> totaal</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Orders In Progress</div>
+      <div class="metric-label">Orders In Behandeling</div>
       <div class="metric-value orange" id="m-orders">--</div>
-      <div class="metric-sub">pending + cooking</div>
+      <div class="metric-sub">wachtend + in bereiding</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Avg Wait Time</div>
+      <div class="metric-label">Gem. Wachttijd</div>
       <div class="metric-value red" id="m-wait">--</div>
-      <div class="metric-sub">minutes per order</div>
+      <div class="metric-sub">minuten per order</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Staff Load</div>
+      <div class="metric-label">Personeelsdruk</div>
       <div class="metric-value blue" id="m-staff">--</div>
-      <div class="metric-sub">active tasks total</div>
+      <div class="metric-sub">taken in totaal</div>
     </div>
     <div class="metric-card">
-      <div class="metric-label">Active Alerts</div>
+      <div class="metric-label">Actieve Meldingen</div>
       <div class="metric-value" id="m-alerts" style="color: var(--red)">--</div>
-      <div class="metric-sub">unresolved</div>
+      <div class="metric-sub">onopgelost</div>
     </div>
   </div>
 
   <!-- LEFT PANEL -->
   <div class="left-panel">
     <div class="panel-header">
-      <div class="panel-title">Floor Overview</div>
+      <div class="panel-title">Vloer Overzicht</div>
     </div>
     <div class="panel-body">
 
-      <div class="section-title">Tables</div>
+      <div class="section-title">Tafels</div>
       <div class="tables-grid" id="tables-grid">
-        <div class="empty-state">Loading...</div>
+        <div class="empty-state">Laden...</div>
       </div>
 
-      <div class="section-title">Recent Orders</div>
+      <div class="section-title">Recente Orders</div>
       <div class="orders-list" id="orders-list">
-        <div class="empty-state">Loading...</div>
+        <div class="empty-state">Laden...</div>
       </div>
 
-      <div class="section-title" style="margin-top: 24px">Staff</div>
+      <div class="section-title" style="margin-top: 24px">Personeel</div>
       <div class="staff-row" id="staff-row">
-        <div class="empty-state">Loading...</div>
+        <div class="empty-state">Laden...</div>
       </div>
 
     </div>
@@ -661,26 +661,26 @@
     <!-- ALERTS -->
     <div class="alerts-section">
       <div class="panel-header">
-        <div class="panel-title">Alerts</div>
+        <div class="panel-title">Meldingen</div>
         <span id="alert-count" style="font-family: 'Space Mono', monospace; font-size: 10px; color: var(--red)"></span>
       </div>
       <div class="alerts-list" id="alerts-list">
-        <div class="no-alerts">No active alerts</div>
+        <div class="no-alerts">No actief alerts</div>
       </div>
     </div>
 
     <!-- AI INSIGHT -->
     <div class="ai-section">
       <div class="panel-header">
-        <div class="panel-title">AI Floor Manager</div>
+        <div class="panel-title">AI Vloermanager</div>
       </div>
       <div class="ai-body" id="ai-body">
         <div class="ai-loading">
           <div class="ai-spinner"></div>
-          Waiting for analysis...
+          Wachten op analyse...
         </div>
       </div>
-      <button class="ai-refresh-btn" id="ai-btn" onclick="runAIAnalysis()">⬡ RUN AI ANALYSIS</button>
+      <button class="ai-refresh-btn" id="ai-btn" onclick="runAIAnalysis()">⬡ AI ANALYSE UITVOEREN</button>
     </div>
 
   </div>
@@ -710,9 +710,9 @@
   // Format time ago
   function timeAgo(dateStr) {
     const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
-    if (diff < 1) return 'just now';
-    if (diff === 1) return '1 min ago';
-    return `${diff} min ago`;
+    if (diff < 1) return 'zojuist';
+    if (diff === 1) return '1 min geleden';
+    return `${diff} min geleden`;
   }
 
   // Load Tables
@@ -720,7 +720,7 @@
     const data = await supabase('tables', 'order=id.asc');
     const grid = document.getElementById('tables-grid');
     if (!data || data.length === 0) {
-      grid.innerHTML = '<div class="empty-state">No tables found</div>';
+      grid.innerHTML = '<div class="empty-state">Geen tafels gevonden</div>';
       return data;
     }
     grid.innerHTML = data.map(t => `
@@ -732,8 +732,8 @@
       </div>
     `).join('');
 
-    const active = data.filter(t => t.status !== 'empty').length;
-    document.getElementById('m-active').textContent = active;
+    const actief = data.filter(t => t.status !== 'leeg').length;
+    document.getElementById('m-actief').textContent = actief;
     document.getElementById('m-total').textContent = data.length;
     return data;
   }
@@ -743,7 +743,7 @@
     const data = await supabase('orders', 'order=created_at.desc&limit=8');
     const list = document.getElementById('orders-list');
     if (!data || data.length === 0) {
-      list.innerHTML = '<div class="empty-state">No orders yet</div>';
+      list.innerHTML = '<div class="empty-state">Nog geen orders</div>';
       document.getElementById('m-orders').textContent = '0';
       document.getElementById('m-wait').textContent = '0m';
       return data;
@@ -757,8 +757,8 @@
       </div>
     `).join('');
 
-    const active = data.filter(o => o.status === 'pending' || o.status === 'cooking').length;
-    document.getElementById('m-orders').textContent = active;
+    const actief = data.filter(o => o.status === 'wachtend' || o.status === 'in bereiding').length;
+    document.getElementById('m-orders').textContent = actief;
 
     const avgWait = Math.round(data.reduce((a, o) => a + (o.estimated_prep_time || 12), 0) / data.length);
     document.getElementById('m-wait').textContent = avgWait + 'm';
@@ -770,11 +770,11 @@
     const data = await supabase('staff', 'order=id.asc');
     const row = document.getElementById('staff-row');
     if (!data || data.length === 0) {
-      row.innerHTML = '<div class="empty-state">No staff data</div>';
+      row.innerHTML = '<div class="empty-state">Geen personeelsdata</div>';
       return data;
     }
     row.innerHTML = data.map(s => {
-      const pct = Math.min((s.active_tasks / 10) * 100, 100);
+      const pct = Math.min((s.actief_tasks / 10) * 100, 100);
       const cls = pct < 40 ? 'load-low' : pct < 70 ? 'load-med' : 'load-high';
       return `
         <div class="staff-card">
@@ -783,12 +783,12 @@
           <div class="staff-load-bar">
             <div class="staff-load-fill ${cls}" style="width: ${pct}%"></div>
           </div>
-          <div class="staff-tasks">${s.active_tasks} tasks</div>
+          <div class="staff-tasks">${s.actief_tasks} tasks</div>
         </div>
       `;
     }).join('');
 
-    const total = data.reduce((a, s) => a + s.active_tasks, 0);
+    const total = data.reduce((a, s) => a + s.actief_tasks, 0);
     document.getElementById('m-staff').textContent = total;
     return data;
   }
@@ -800,13 +800,13 @@
     const countEl = document.getElementById('alert-count');
 
     if (!data || data.length === 0) {
-      list.innerHTML = '<div class="no-alerts">✓ No active alerts</div>';
+      list.innerHTML = '<div class="no-alerts">✓ No actief alerts</div>';
       countEl.textContent = '';
       document.getElementById('m-alerts').textContent = '0';
       return data;
     }
 
-    countEl.textContent = `${data.length} active`;
+    countEl.textContent = `${data.length} actief`;
     document.getElementById('m-alerts').textContent = data.length;
 
     list.innerHTML = data.map(a => `
@@ -824,7 +824,7 @@
     const btn = document.getElementById('ai-btn');
     const body = document.getElementById('ai-body');
     btn.disabled = true;
-    btn.textContent = '⬡ ANALYZING...';
+    btn.textContent = '⬡ ANALYSEREN...';
 
     body.innerHTML = `<div class="ai-loading"><div class="ai-spinner"></div>Gathering live data...</div>`;
 
@@ -866,7 +866,7 @@
           <div class="ai-block-text">${result.error?.message || JSON.stringify(result.error)}</div>
         </div>`;
         btn.disabled = false;
-        btn.textContent = '⬡ RUN AI ANALYSIS';
+        btn.textContent = '⬡ AI ANALYSE UITVOEREN';
         return;
       }
 
@@ -878,12 +878,12 @@
           <div class="ai-block-text">Raw response: ${JSON.stringify(result).substring(0, 300)}</div>
         </div>`;
         btn.disabled = false;
-        btn.textContent = '⬡ RUN AI ANALYSIS';
+        btn.textContent = '⬡ AI ANALYSE UITVOEREN';
         return;
       }
 
-      const labels = ['SITUATION NOW', 'RISK DETECTION', 'RECOMMENDED ACTION'];
-      const parts = text.split(/SITUATION NOW|RISK DETECTION|RECOMMENDED ACTION/).filter(s => s.trim());
+      const labels = ['HUIDIGE SITUATIE', 'RISICO DETECTIE', 'AANBEVOLEN ACTIE'];
+      const parts = text.split(/HUIDIGE SITUATIE|RISICO DETECTIE|AANBEVOLEN ACTIE/).filter(s => s.trim());
 
       if (parts.length >= 3) {
         body.innerHTML = labels.map((label, i) => `
@@ -908,7 +908,7 @@
     }
 
     btn.disabled = false;
-    btn.textContent = '⬡ RUN AI ANALYSIS';
+    btn.textContent = '⬡ AI ANALYSE UITVOEREN';
   }
 
   async function loadAll() {
@@ -956,25 +956,25 @@
     await supabasePost('orders', {
       table_id: tableId,
       dish: dish,
-      status: 'pending',
+      status: 'wachtend',
       estimated_prep_time: prepTime
     });
-    await supabasePatch('tables', tableId, { status: 'ordered' });
+    await supabasePatch('tables', tableId, { status: 'besteld' });
   }
 
   async function advanceOrders() {
     const orders = await supabase('orders', 'status=eq.pending&limit=2');
     if (orders && orders.length > 0) {
       for (const o of orders) {
-        await supabasePatch('orders', o.id, { status: 'cooking' });
-        await supabasePatch('tables', o.table_id, { status: 'food_waiting' });
+        await supabasePatch('orders', o.id, { status: 'in bereiding' });
+        await supabasePatch('tables', o.table_id, { status: 'eten wacht' });
       }
     }
     const cooking = await supabase('orders', 'status=eq.cooking&limit=1');
     if (cooking && cooking.length > 0) {
       for (const o of cooking) {
-        await supabasePatch('orders', o.id, { status: 'served' });
-        await supabasePatch('tables', o.table_id, { status: 'finished' });
+        await supabasePatch('orders', o.id, { status: 'geserveerd' });
+        await supabasePatch('tables', o.table_id, { status: 'klaar' });
       }
     }
   }
@@ -982,12 +982,12 @@
   async function rotateTables() {
     const finished = await supabase('tables', 'status=eq.finished&limit=1');
     if (finished && finished.length > 0) {
-      await supabasePatch('tables', finished[0].id, { status: 'empty', guests: 0 });
+      await supabasePatch('tables', finished[0].id, { status: 'leeg', guests: 0 });
     }
     const empty = await supabase('tables', 'status=eq.empty&limit=1');
     if (empty && empty.length > 0) {
       const guests = Math.floor(Math.random() * 5) + 1;
-      await supabasePatch('tables', empty[0].id, { status: 'seated', guests: guests, seated_at: new Date().toISOString() });
+      await supabasePatch('tables', empty[0].id, { status: 'bezet', guests: guests, seated_at: new Date().toISOString() });
     }
   }
 
@@ -1014,6 +1014,23 @@
     }
   }
 
+  async function updateStaffLoad() {
+    const actiefOrders = await supabase('orders', 'status=in.(pending,cooking)');
+    const staff = await supabase('staff', 'order=id.asc');
+    if (!staff || !actiefOrders) return;
+
+    const totalActive = actiefOrders.length;
+    const staffCount = staff.length;
+
+    // Distribute load across staff with some randomness
+    for (let i = 0; i < staff.length; i++) {
+      const base = Math.floor(totalActive / staffCount);
+      const variance = Math.floor(Math.random() * 3);
+      const tasks = Math.max(0, base + variance);
+      await supabasePatch('staff', staff[i].id, { actief_tasks: tasks });
+    }
+  }
+
   async function simulationTick() {
     const roll = Math.random();
     if (roll < 0.6) await generateOrder();
@@ -1021,6 +1038,7 @@
     if (roll < 0.4) await rotateTables();
     await checkDelays();
     await resolveOldAlerts();
+    await updateStaffLoad();
     await loadAll();
   }
 
