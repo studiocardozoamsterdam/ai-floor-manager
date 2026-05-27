@@ -915,9 +915,119 @@
     await Promise.all([loadTables(), loadOrders(), loadStaff(), loadAlerts()]);
   }
 
+  // SIMULATION ENGINE
+  const dishes = [
+    'Ribeye steak', 'Pasta carbonara', 'Caesar salad',
+    'Margherita pizza', 'Salmon tartare', 'Risotto funghi',
+    'Burger met frites', 'Gegrilde kip', 'Tiramisu', 'Soep van de dag',
+    'Garnalencocktail', 'Entrecote', 'Veggie bowl', 'Fish & chips'
+  ];
+
+  async function supabasePost(table, body) {
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(body)
+    });
+  }
+
+  async function supabasePatch(table, id, body) {
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(body)
+    });
+  }
+
+  async function generateOrder() {
+    const tableId = Math.floor(Math.random() * 8) + 1;
+    const dish = dishes[Math.floor(Math.random() * dishes.length)];
+    const prepTime = Math.floor(Math.random() * 15) + 8;
+    await supabasePost('orders', {
+      table_id: tableId,
+      dish: dish,
+      status: 'pending',
+      estimated_prep_time: prepTime
+    });
+    await supabasePatch('tables', tableId, { status: 'ordered' });
+  }
+
+  async function advanceOrders() {
+    const orders = await supabase('orders', 'status=eq.pending&limit=2');
+    if (orders && orders.length > 0) {
+      for (const o of orders) {
+        await supabasePatch('orders', o.id, { status: 'cooking' });
+        await supabasePatch('tables', o.table_id, { status: 'food_waiting' });
+      }
+    }
+    const cooking = await supabase('orders', 'status=eq.cooking&limit=1');
+    if (cooking && cooking.length > 0) {
+      for (const o of cooking) {
+        await supabasePatch('orders', o.id, { status: 'served' });
+        await supabasePatch('tables', o.table_id, { status: 'finished' });
+      }
+    }
+  }
+
+  async function rotateTables() {
+    const finished = await supabase('tables', 'status=eq.finished&limit=1');
+    if (finished && finished.length > 0) {
+      await supabasePatch('tables', finished[0].id, { status: 'empty', guests: 0 });
+    }
+    const empty = await supabase('tables', 'status=eq.empty&limit=1');
+    if (empty && empty.length > 0) {
+      const guests = Math.floor(Math.random() * 5) + 1;
+      await supabasePatch('tables', empty[0].id, { status: 'seated', guests: guests, seated_at: new Date().toISOString() });
+    }
+  }
+
+  async function checkDelays() {
+    const orders = await supabase('orders', 'status=eq.pending&order=created_at.asc&limit=5');
+    if (!orders) return;
+    for (const o of orders) {
+      const age = Math.floor((Date.now() - new Date(o.created_at)) / 60000);
+      if (age > 15) {
+        await supabasePost('alerts', {
+          type: 'delay',
+          message: `Order tafel ${o.table_id} (${o.dish}) wacht ${age} minuten.`,
+          severity: age > 25 ? 'critical' : 'warning',
+          resolved: false
+        });
+      }
+    }
+  }
+
+  async function resolveOldAlerts() {
+    const old = await supabase('alerts', 'resolved=eq.false&order=created_at.asc&limit=3');
+    if (old && old.length > 2) {
+      await supabasePatch('alerts', old[0].id, { resolved: true });
+    }
+  }
+
+  async function simulationTick() {
+    const roll = Math.random();
+    if (roll < 0.6) await generateOrder();
+    await advanceOrders();
+    if (roll < 0.4) await rotateTables();
+    await checkDelays();
+    await resolveOldAlerts();
+    await loadAll();
+  }
+
   // Init
   loadAll();
-  setInterval(loadAll, 30000); // auto-refresh every 30s
+  setInterval(loadAll, 15000);
+  setInterval(simulationTick, 20000);
 </script>
 </body>
 </html>
