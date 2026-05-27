@@ -688,7 +688,7 @@
 
 <script>
   const SUPABASE_URL = 'https://nhlowlerkggqunpljqoh.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_3eVMM5iTWre3F3v-sHrxiQ_56PEJHyF';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5obG93bGVya2dncXVucGxqcW9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NzI4ODEsImV4cCI6MjA5NTQ0ODg4MX0.67anH0QUoVhi2lJlur-Qdh6Ny2WavDFwsm0xw_9ykfA';
 
   async function supabase(table, params = '') {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
